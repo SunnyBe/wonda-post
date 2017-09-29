@@ -3,6 +3,7 @@ package com.perror.app.wondapost.loginfeatures;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -27,8 +28,17 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.FacebookSdk;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
+import com.facebook.login.widget.LoginButton;
 import com.perror.app.wondapost.R;
 
 import java.util.ArrayList;
@@ -59,136 +69,59 @@ public class LoginActivity extends AppCompatActivity {
     //private UserLoginTask mAuthTask = null;
 
     // UI references.
-    private AutoCompleteTextView mEmailView;
-    private EditText mPasswordView;
-    private View mProgressView;
-    private View mLoginFormView;
+    private TextView statusHead;
+    private ProgressBar loginProgress;
+    private Button loginButton;
+
+    CallbackManager callbackManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //Before setting your layout you have to initialize the Facebooksdk
+        FacebookSdk.sdkInitialize(getApplicationContext());
         setContentView(R.layout.login_layout);
-        // Set up the login form.
-        mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
-        //populateAutoComplete();
+        initializeViews();
 
-        mPasswordView = (EditText) findViewById(R.id.password);
-        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == R.id.login || id == EditorInfo.IME_NULL) {
-                    //attemptLogin();
-                    return true;
-                }
-                return false;
-            }
-        });
+        //Now i want to handle callbacks from the login
+        handleFacebookLogin();
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //attemptLogin();
-            }
-        });
+    }
 
-        mLoginFormView = findViewById(R.id.login_form);
-        mProgressView = findViewById(R.id.login_progress);
+    //initialize access to the view in the xml
+    private void initializeViews(){
+        callbackManager = CallbackManager.Factory.create();
+        statusHead = (TextView) findViewById(R.id.status_head);
+        loginProgress = (ProgressBar) findViewById(R.id.progress_bar);
+        loginButton = (Button) findViewById(R.id.login_button);
     }
 
 
+    private void handleFacebookLogin() {
+        LoginManager.getInstance().registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+            @Override
+            public void onSuccess(LoginResult loginResult) {
+                Toast.makeText(getApplicationContext(),"Logged In",Toast.LENGTH_LONG).show();
+                statusHead.setText("Logged In "+loginResult.getAccessToken());
+            }
 
+            @Override
+            public void onCancel() {
+                Toast.makeText(getApplicationContext(),"Logged Cancelled",Toast.LENGTH_LONG).show();
+                statusHead.setText("Cancel Log In");
+            }
 
-//    /**
-//     * Represents an asynchronous login/registration task used to authenticate
-//     * the user.
-//     */
-//    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
-//
-//        private final String mEmail;
-//        private final String mPassword;
-//
-//        UserLoginTask(String email, String password) {
-//            mEmail = email;
-//            mPassword = password;
-//        }
-//        /**
-//         * Shows the progress UI and hides the login form.
-//         */
-//        @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-//        private void showProgress(final boolean show) {
-//            // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-//            // for very easy animations. If available, use these APIs to fade-in
-//            // the progress spinner.
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-//                int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
-//
-//                mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-//                mLoginFormView.animate().setDuration(shortAnimTime).alpha(
-//                        show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
-//                    @Override
-//                    public void onAnimationEnd(Animator animation) {
-//                        mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-//                    }
-//                });
-//
-//                mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-//                mProgressView.animate().setDuration(shortAnimTime).alpha(
-//                        show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
-//                    @Override
-//                    public void onAnimationEnd(Animator animation) {
-//                        mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-//                    }
-//                });
-//            } else {
-//                // The ViewPropertyAnimator APIs are not available, so simply show
-//                // and hide the relevant UI components.
-//                mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-//                mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-//            }
-//        }
-
-//        @Override
-//        protected Boolean doInBackground(Void... params) {
-//            // TODO: attempt authentication against a network service.
-//
-//            try {
-//                // Simulate network access.
-//                Thread.sleep(2000);
-//            } catch (InterruptedException e) {
-//                return false;
-//            }
-//
-//            for (String credential : DUMMY_CREDENTIALS) {
-//                String[] pieces = credential.split(":");
-//                if (pieces[0].equals(mEmail)) {
-//                    // Account exists, return true if the password matches.
-//                    return pieces[1].equals(mPassword);
-//                }
-//            }
-//
-//            // TODO: register the new account here.
-//            return true;
-//        }
-//
-//        @Override
-//        protected void onPostExecute(final Boolean success) {
-//            mAuthTask = null;
-//            showProgress(false);
-//
-//            if (success) {
-//                finish();
-//            } else {
-//                mPasswordView.setError(getString(R.string.error_incorrect_password));
-//                mPasswordView.requestFocus();
-//            }
-//        }
-//
-//        @Override
-//        protected void onCancelled() {
-//            mAuthTask = null;
-//            showProgress(false);
-//        }
-//    }
+            @Override
+            public void onError(FacebookException error) {
+                Toast.makeText(getApplicationContext(),"Logged failed",Toast.LENGTH_LONG).show();
+                statusHead.setText("Error Logging In");
+            }
+        });
+    }
+    @Override
+    protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
 }
 
